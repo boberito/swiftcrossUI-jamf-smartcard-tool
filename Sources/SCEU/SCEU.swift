@@ -69,7 +69,7 @@ struct SCEU: App {
                if showPrefs {
                             ZStack {
                                 Color(0.5, 0.5, 0.5, 0.5)
-                                PrefView(showPrefs: $showPrefs)
+                                PrefView(showPrefs: $showPrefs, jamfActions: jamf)
                                     .frame(maxWidth: 500)                                    
                                     .cornerRadius(8)
                                     .padding()
