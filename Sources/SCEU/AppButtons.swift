@@ -14,14 +14,13 @@ import Foundation
     import DefaultBackend
 #endif
 
-
 struct AppButtons: View {
     @Environment(\.presentAlert) var presentAlert
 
     @State private var twentyFourHours = true
     @State private var disabledToggle: Bool = true
     @State private var toggleButtonText: String = "Disable"    
-    @State private var preferences: Preferences
+    // @State private var preferences: Preferences
     
     @Binding var selectedComputer: String?
     @Binding var smartcardStatus: String?
@@ -47,7 +46,7 @@ struct AppButtons: View {
         self._EA1_ID = EA1_ID
         self._EA_ID2 = EA_ID2
         self.jamfActions = jamfActions
-        _preferences = State(wrappedValue: Preferences.readPreferences())
+        // _preferences = State(wrappedValue: Preferences.readPreferences())
     }
 
     var body: some View {
@@ -56,6 +55,7 @@ struct AppButtons: View {
 
             Button("Look Up")
             {
+                let preferences = Preferences.readPreferences()
                 jamfActions.id = preferences.ID1
                 jamfActions.id2 = preferences.ID2
                 jamfActions.server = preferences.Server
@@ -66,14 +66,13 @@ struct AppButtons: View {
                 searchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
                 Task {
                     await jamfActions.getData(apiURL: "api/v2/computers-inventory?section=GENERAL&section=OPERATING_SYSTEM&section=HARDWARE&section=CONFIGURATION_PROFILES&section=USER_AND_LOCATION&section=EXTENSION_ATTRIBUTES&filter=userAndLocation.username==*\(searchText)*,userAndLocation.realname==*\(searchText)*,general.assetTag==*\(searchText)*,general.name==*\(searchText)*,hardware.serialNumber==*\(searchText)*")         
-                    // print(jamfActions.jamfSearchResults)
                     switch jamfActions.jamfResponseCode {
                         case 200, 201:
                             jamfResults = jamfActions.jamfSearchResults                    
                         case 401:
                             await presentAlert("Incorrect Login Information")
                         default:
-                            print("Not so sure")
+                            await presentAlert("Error HTTP CODE:\(jamfActions.jamfResponseCode)")
                     }
                     
                 }
@@ -82,6 +81,7 @@ struct AppButtons: View {
             .frame(maxWidth: 85)                
             Button(toggleButtonText)
             {
+                let preferences = Preferences.readPreferences()
                 jamfActions.id = preferences.ID1
                 jamfActions.id2 = preferences.ID2
                 jamfActions.server = preferences.Server
@@ -95,7 +95,7 @@ struct AppButtons: View {
                     Task {
                         guard let selectedComputer = selectedComputer else { return }
                         await jamfActions.putData(apiURL: "JSSResource/computers/id/\(selectedComputer)", xmlData: xmldata)
-
+                        
                         switch jamfActions.jamfResponseCode {
                             case 200, 201:
                                 await jamfActions.getData(apiURL: "api/v2/computers-inventory?section=GENERAL&section=OPERATING_SYSTEM&section=HARDWARE&section=CONFIGURATION_PROFILES&section=USER_AND_LOCATION&section=EXTENSION_ATTRIBUTES&filter=userAndLocation.username==*\(searchText)*,userAndLocation.realname==*\(searchText)*,general.assetTag==*\(searchText)*,general.name==*\(searchText)*,hardware.serialNumber==*\(searchText)*")
@@ -105,11 +105,11 @@ struct AppButtons: View {
                             case 401:
                                 await presentAlert("Incorrect Login Information")
                             default:
-                                print("I AM A FAILURE AT PUTTING")
+                                await presentAlert("Error \(jamfActions.jamfResponseCode)")
                         }
 
                     }
-                case "enabled":            
+                case "enabled":        
                     let daysToAdd = 1
                         let currentDate = Date()
                         var dateComponent = DateComponents()
@@ -127,8 +127,7 @@ struct AppButtons: View {
                         let xmldata = "<computer><extension_attributes><extension_attribute><id>" + preferences.ID1 + "</id><value>Disabled</value></extension_attribute><extension_attribute><id>\(preferences.ID2)</id><value>\(date)</value></extension_attribute></extension_attributes></computer>"
                         Task {
                             guard let selectedComputer = selectedComputer else { return }
-                            await jamfActions.putData(apiURL: "JSSResource/computers/id/\(selectedComputer)", xmlData: xmldata)
-
+                            await jamfActions.putData(apiURL: "JSSResource/computers/id/\(selectedComputer)", xmlData: xmldata)                            
                             switch jamfActions.jamfResponseCode {
                                 case 200, 201:
                                     await jamfActions.getData(apiURL: "api/v2/computers-inventory?section=GENERAL&section=OPERATING_SYSTEM&section=HARDWARE&section=CONFIGURATION_PROFILES&section=USER_AND_LOCATION&section=EXTENSION_ATTRIBUTES&filter=userAndLocation.username==*\(searchText)*,userAndLocation.realname==*\(searchText)*,general.assetTag==*\(searchText)*,general.name==*\(searchText)*,hardware.serialNumber==*\(searchText)*")
@@ -138,17 +137,18 @@ struct AppButtons: View {
                                 case 401:
                                     await presentAlert("Incorrect Login Information")                                    
                                 default:
-                                    print("I AM A FAILURE AT PUTTING")
+                                    await presentAlert("Error HTTP CODE:\(jamfActions.jamfResponseCode)\n XML:\(xmldata)")
                             }
 
                         }
+                       
                 case "disabled":
                     searchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
                     let xmldata = "<computer><extension_attributes><extension_attribute><id>" + preferences.ID1 + "</id><value>Enabled</value></extension_attribute><extension_attribute><id>\(preferences.ID2)</id><value></value></extension_attribute></extension_attributes></computer>"
                     Task {
                         guard let selectedComputer = selectedComputer else { return }
                         await jamfActions.putData(apiURL: "JSSResource/computers/id/\(selectedComputer)", xmlData: xmldata)
-
+                   
                         switch jamfActions.jamfResponseCode {
                             case 200, 201:
                                 await jamfActions.getData(apiURL: "api/v2/computers-inventory?section=GENERAL&section=OPERATING_SYSTEM&section=HARDWARE&section=USER_AND_LOCATION&section=EXTENSION_ATTRIBUTES&filter=userAndLocation.username==*\(searchText)*,userAndLocation.realname==*\(searchText)*,general.assetTag==*\(searchText)*,general.name==*\(searchText)*,hardware.serialNumber==*\(searchText)*")
@@ -158,10 +158,11 @@ struct AppButtons: View {
                             case 401:
                                 await presentAlert("Incorrect Login Information")                                
                             default:
-                                print("I AM A FAILURE AT PUTTING")
+                                await presentAlert("Error HTTP CODE:\(jamfActions.jamfResponseCode)\n XML:\(xmldata)")
                         }
 
                     }
+                  
                 default:
                     searchText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
                     let xmldata = "<computer><extension_attributes><extension_attribute><id>" + preferences.ID1 + "</id><value>Enabled</value></extension_attribute><extension_attribute><id>\(preferences.ID2)</id><value></value></extension_attribute></extension_attributes></computer>"
@@ -178,10 +179,11 @@ struct AppButtons: View {
                             case 401:
                                 await presentAlert("Incorrect Login Information")                                
                             default:
-                                print("I AM A FAILURE AT PUTTING")
+                                await presentAlert("Error HTTP CODE:\(jamfActions.jamfResponseCode)\n XML:\(xmldata)")
                         }
 
                     }
+                  
             }
             }
                 .frame(maxWidth: 85)
@@ -217,16 +219,10 @@ struct AppButtons: View {
                 default:
                     toggleButtonText = "Disable"
             }
-                
-            
-
+     
         }
     
     }
     }
-
-    
-    
-    
 }
 
