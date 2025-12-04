@@ -39,6 +39,11 @@ class JamfClass: SwiftCrossUI.ObservableObject {
     }
 
     func getData(apiURL: String) async {
+
+        let prefs = Preferences.readPreferences()
+        self.server = prefs.Server
+        self.id = prefs.ID1
+        self.id2 = prefs.ID2
         let fullURL = self.server + apiURL        
         guard let fullURLurl = URL(string: fullURL) else { return }
         var request = URLRequest(url: fullURLurl)
@@ -86,6 +91,11 @@ class JamfClass: SwiftCrossUI.ObservableObject {
         
     }
     func putData(apiURL: String, xmlData: String) async {
+        let prefs = Preferences.readPreferences()
+        self.server = prefs.Server
+        self.id = prefs.ID1
+        self.id2 = prefs.ID2
+
         let fullURL = self.server + apiURL
         guard let fullURLurl = URL(string: fullURL) else { return }
         var request = URLRequest(url: fullURLurl)
@@ -101,6 +111,7 @@ class JamfClass: SwiftCrossUI.ObservableObject {
             if let (_, urlResponse) = try? await URLSession.shared.data(for: request) {
                 if let returnResponse = urlResponse as? HTTPURLResponse {
                     self.jamfResponseCode = returnResponse.statusCode
+                    
                 } else {
                     self.jamfResponseCode = 666
                 }
@@ -110,10 +121,7 @@ class JamfClass: SwiftCrossUI.ObservableObject {
         
     
         if testAuth() {
-            let (tokeny, expiry) = await authenticate() 
-                token = tokeny
-                expires = expiry
-            
+                await executeRequest()
         } else {
             let (tokeny, expirey) = await authenticate()
                 self.token = tokeny
