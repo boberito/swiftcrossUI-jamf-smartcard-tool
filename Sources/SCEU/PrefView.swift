@@ -14,14 +14,15 @@ import Foundation
     import DefaultBackend
 #endif
 
-
 struct PrefView: View {    
 
     @Binding var showPrefs: Bool
     @State private var preferences: Preferences
+    let jamfActions: JamfClass
 
-     init(showPrefs: Binding<Bool>) {
+     init(showPrefs: Binding<Bool>, jamfActions: JamfClass) {
         self._showPrefs = showPrefs
+        self.jamfActions = jamfActions
         _preferences = State(wrappedValue: Preferences.readPreferences())
     }
     
@@ -66,6 +67,10 @@ struct PrefView: View {
                         showPrefs.toggle()
                     }
                     #endif
+
+                    jamfActions.server = preferences.Server
+                    jamfActions.id = preferences.ID1
+                    jamfActions.id2 = preferences.ID2
                 }
                 Button("Cancel") {
                     showPrefs.toggle()
@@ -76,6 +81,5 @@ struct PrefView: View {
 
         }
         
-       
     }    
 }
